@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  accounts         Account[]
+  sessions         Session[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// QuotePilot models
+
+model Client {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  companyName String?
+  phone       String?
+  address     String?
+  quotes      Quote[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Quote {
+  id            String      @id @default(cuid())
+  quoteNumber   String      @unique
+  title         String
+  description   String?
+  status        QuoteStatus @default(DRAFT)
+  clientId      String
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items         QuoteItem[]
+  subtotalCents Int         @default(0)
+  taxCents      Int         @default(0)
+  totalCents    Int         @default(0)
+  taxRateBps    Int         @default(1498) // basis points: 14.975% = 1497.5 ~ 1498
+  publicToken   String      @unique
+  validUntil    DateTime?
+  sentAt        DateTime?
+  acceptedAt    DateTime?
+  rejectedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+}
+
+model QuoteItem {
+  id             String   @id @default(cuid())
+  quoteId        String
+  quote          Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  quantity       Int      @default(1)
+  unitPriceCents Int
+  totalCents     Int
+  position       Int      @default(0)
+
+  @@index([quoteId])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MEMBER
+}
