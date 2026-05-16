@@ -5,11 +5,11 @@ import { formatCurrency } from "@/lib/quote-utils";
 import { Button } from "@/components/ui/button";
 
 const statusStyles: Record<string, string> = {
-  DRAFT: "bg-indigo-soft text-primary",
-  SENT: "bg-[#dff3ff] text-[#13739c]",
-  ACCEPTED: "bg-secondary text-teal",
-  REJECTED: "bg-accent-soft text-accent",
-  EXPIRED: "bg-sun-soft text-[#8a6512]",
+  DRAFT: "bg-primary-soft text-primary",
+  SENT: "bg-primary-soft text-primary",
+  ACCEPTED: "bg-success-soft text-success",
+  REJECTED: "bg-destructive-soft text-destructive",
+  EXPIRED: "bg-warning-soft text-warning",
 };
 
 export default async function DashboardPage() {
@@ -36,16 +36,16 @@ export default async function DashboardPage() {
     .reduce((s, g) => s + (g._sum.totalCents ?? 0), 0);
 
   const stats = [
-    { label: d.statsClients, value: String(clientCount), accent: "border-l-primary bg-indigo-soft/60" },
-    { label: d.statsQuotes, value: String(total), accent: "border-l-teal bg-secondary/60" },
-    { label: d.statsDraft, value: String(drafts), accent: "border-l-[#8a6be8] bg-[#f3edff]" },
-    { label: d.statsSent, value: String(sent), accent: "border-l-[#1894c4] bg-[#eef7ff]" },
-    { label: d.statsAccepted, value: String(accepted), accent: "border-l-accent bg-accent-soft" },
-    { label: d.statsPotential, value: formatCurrency(potentialCents, locale), accent: "border-l-[#d39a12] bg-sun-soft" },
+    { label: d.statsClients, value: String(clientCount), accent: "border-l-primary bg-card" },
+    { label: d.statsQuotes, value: String(total), accent: "border-l-primary bg-primary-soft/50" },
+    { label: d.statsDraft, value: String(drafts), accent: "border-l-accent bg-accent-soft/70" },
+    { label: d.statsSent, value: String(sent), accent: "border-l-primary bg-card" },
+    { label: d.statsAccepted, value: String(accepted), accent: "border-l-success bg-success-soft" },
+    { label: d.statsPotential, value: formatCurrency(potentialCents, locale), accent: "border-l-accent bg-accent-soft" },
   ];
 
   return (
-    <div className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_42%)] px-6 py-10">
+    <div className="bg-[linear-gradient(180deg,#fbfaf6_0%,#ffffff_42%)] px-6 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{d.title}</h1>
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
               <table className="w-full text-sm">
                 <tbody>
                   {recentQuotes.map((q) => (
-                    <tr key={q.id} className="border-b last:border-b-0 hover:bg-indigo-soft/40">
+                    <tr key={q.id} className="border-b last:border-b-0 hover:bg-primary-soft/40">
                       <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{q.quoteNumber}</td>
                       <td className="px-5 py-3 font-medium">{q.title}</td>
                       <td className="px-5 py-3 text-muted-foreground">{q.client.name}</td>
@@ -107,3 +107,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
+

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t bg-indigo-soft/60">
+    <footer className="border-t bg-accent-soft/70">
       <div className="mx-auto grid max-w-6xl gap-6 px-6 py-10 text-sm text-muted-foreground sm:grid-cols-3">
         <div>
           <p className="font-medium text-foreground">QuotePilot</p>

@@ -5,11 +5,11 @@ import { getT } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/quote-utils";
 
 const statusStyles: Record<string, string> = {
-  DRAFT: "bg-indigo-soft text-primary",
-  SENT: "bg-[#dff3ff] text-[#13739c]",
-  ACCEPTED: "bg-secondary text-teal",
-  REJECTED: "bg-accent-soft text-accent",
-  EXPIRED: "bg-sun-soft text-[#8a6512]",
+  DRAFT: "bg-primary-soft text-primary",
+  SENT: "bg-primary-soft text-primary",
+  ACCEPTED: "bg-success-soft text-success",
+  REJECTED: "bg-destructive-soft text-destructive",
+  EXPIRED: "bg-warning-soft text-warning",
 };
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -88,3 +88,4 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     </div>
   );
 }
+

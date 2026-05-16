@@ -32,12 +32,12 @@ export default async function PublicQuotePage({
     pq.statusLabels[quote.status as keyof typeof pq.statusLabels] ?? quote.status;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eaf0ff_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fbfaf6_0%,#e8eef5_100%)]">
       {/* Header */}
       <header className="border-b bg-card/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-6">
           <span className="flex items-center gap-2 text-sm font-semibold">
-            <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
             QuotePilot
           </span>
           <span className="text-xs text-muted-foreground">{pq.poweredBy}</span>
@@ -46,7 +46,7 @@ export default async function PublicQuotePage({
 
       <main className="mx-auto max-w-4xl px-6 py-10">
         {isExpired && (
-          <div className="mb-6 rounded-md border border-accent/20 bg-accent-soft p-4 text-sm text-accent">
+          <div className="mb-6 rounded-md border bg-destructive-soft p-4 text-sm text-destructive">
             {pq.expired}
           </div>
         )}
@@ -81,7 +81,7 @@ export default async function PublicQuotePage({
         {/* Line items */}
         <div className="mb-8 overflow-hidden rounded-md border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="border-b bg-indigo-soft text-xs text-primary">
+            <thead className="border-b bg-primary-soft text-xs text-primary">
               <tr>
                 <th className="px-5 py-3 text-left font-medium">{pq.itemName}</th>
                 <th className="px-5 py-3 text-right font-medium">{pq.itemQty}</th>
@@ -91,7 +91,7 @@ export default async function PublicQuotePage({
             </thead>
             <tbody>
               {quote.items.map((item) => (
-                <tr key={item.id} className="border-b last:border-b-0 hover:bg-indigo-soft/40">
+                <tr key={item.id} className="border-b last:border-b-0 hover:bg-primary-soft/40">
                   <td className="px-5 py-3">
                     <p className="font-medium">{item.name}</p>
                     {item.description && (
@@ -146,7 +146,7 @@ export default async function PublicQuotePage({
         )}
 
         {quote.status === "ACCEPTED" && (
-          <div className="mt-10 rounded-md border border-teal/20 bg-secondary p-4 text-center text-sm text-teal">
+          <div className="mt-10 rounded-md border bg-success-soft p-4 text-center text-sm text-success">
             {pq.accepted}
           </div>
         )}

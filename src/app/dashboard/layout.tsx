@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen flex-col">
       {/* Demo bar */}
-      <div className="border-b border-teal/20 bg-secondary px-6 py-2 text-center text-xs font-medium text-secondary-foreground">
+      <div className="border-b bg-secondary px-6 py-2 text-center text-xs font-medium text-secondary-foreground">
         {t.dashboard.demoBar}
       </div>
 
@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <aside className="hidden w-56 shrink-0 border-r bg-card lg:block">
           <div className="flex h-14 items-center border-b px-5">
             <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-              <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+              <span className="h-2.5 w-2.5 rounded-full bg-primary" />
               QuotePilot
             </Link>
           </div>
@@ -37,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <Link
                 key={l.href}
                 href={l.href}
-                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-indigo-soft hover:text-primary"
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary"
               >
                 <l.icon className="h-4 w-4" />
                 {l.label}
