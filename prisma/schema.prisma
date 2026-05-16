@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["quotepilot"]
 }
 
 model User {
@@ -17,6 +18,8 @@ model User {
   sessions         Session[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@schema("quotepilot")
 }
 
 model Account {
@@ -34,6 +37,7 @@ model Account {
   user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
+  @@schema("quotepilot")
 }
 
 model Session {
@@ -41,6 +45,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("quotepilot")
 }
 
 model VerificationToken {
@@ -49,6 +55,7 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+  @@schema("quotepilot")
 }
 
 // QuotePilot models
@@ -63,6 +70,8 @@ model Client {
   quotes      Quote[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@schema("quotepilot")
 }
 
 model Quote {
@@ -88,6 +97,7 @@ model Quote {
 
   @@index([clientId])
   @@index([status])
+  @@schema("quotepilot")
 }
 
 model QuoteItem {
@@ -102,6 +112,7 @@ model QuoteItem {
   position       Int      @default(0)
 
   @@index([quoteId])
+  @@schema("quotepilot")
 }
 
 enum QuoteStatus {
@@ -110,10 +121,15 @@ enum QuoteStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+
+  @@schema("quotepilot")
 }
 
 enum Role {
   ADMIN
   OWNER
   MEMBER
+  CUSTOMER
+
+  @@schema("quotepilot")
 }

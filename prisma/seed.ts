@@ -1,7 +1,13 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma";
 import { customAlphabet } from "nanoid";
 
-const prisma = new PrismaClient();
+const connectionString =
+  process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/quotepilot";
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 32);
 
 function token() {
@@ -47,7 +53,6 @@ async function main() {
 
   // Quotes
   const year = new Date().getFullYear();
-  const pad = (n: number) => String(n).padStart(4, "0");
 
   await prisma.quote.upsert({
     where: { quoteNumber: `QP-${year}-0001` },
