@@ -5,11 +5,11 @@ import { formatCurrency } from "@/lib/quote-utils";
 import { Button } from "@/components/ui/button";
 
 const statusStyles: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  SENT: "bg-blue-100 text-blue-700",
-  ACCEPTED: "bg-green-100 text-green-700",
-  REJECTED: "bg-red-100 text-red-700",
-  EXPIRED: "bg-orange-100 text-orange-700",
+  DRAFT: "bg-indigo-soft text-primary",
+  SENT: "bg-[#dff3ff] text-[#13739c]",
+  ACCEPTED: "bg-secondary text-teal",
+  REJECTED: "bg-accent-soft text-accent",
+  EXPIRED: "bg-sun-soft text-[#8a6512]",
 };
 
 export default async function QuotesPage() {
@@ -59,7 +59,7 @@ export default async function QuotesPage() {
                     <td className="px-5 py-3 font-medium">{quote.title}</td>
                     <td className="px-5 py-3 text-muted-foreground">{quote.client.name}</td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium ${statusStyles[quote.status] ?? ""}`}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[quote.status] ?? ""}`}>
                         {q.statusLabels[quote.status as keyof typeof q.statusLabels]}
                       </span>
                     </td>

@@ -32,26 +32,29 @@ export default async function PublicQuotePage({
     pq.statusLabels[quote.status as keyof typeof pq.statusLabels] ?? quote.status;
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eaf0ff_100%)]">
       {/* Header */}
-      <header className="border-b bg-background">
+      <header className="border-b bg-card/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-6">
-          <span className="text-sm font-semibold">QuotePilot</span>
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+            QuotePilot
+          </span>
           <span className="text-xs text-muted-foreground">{pq.poweredBy}</span>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-10">
         {isExpired && (
-          <div className="mb-6 border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mb-6 rounded-md border border-accent/20 bg-accent-soft p-4 text-sm text-accent">
             {pq.expired}
           </div>
         )}
 
         {/* Quote header */}
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b pb-6">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4 rounded-md border bg-card p-6 shadow-sm">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               {pq.quote} {quote.quoteNumber}
             </p>
             <h1 className="mt-2 text-2xl font-semibold">{quote.title}</h1>
@@ -76,9 +79,9 @@ export default async function PublicQuotePage({
         </div>
 
         {/* Line items */}
-        <div className="mb-8 border bg-background">
+        <div className="mb-8 overflow-hidden rounded-md border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="border-b text-xs text-muted-foreground">
+            <thead className="border-b bg-indigo-soft text-xs text-primary">
               <tr>
                 <th className="px-5 py-3 text-left font-medium">{pq.itemName}</th>
                 <th className="px-5 py-3 text-right font-medium">{pq.itemQty}</th>
@@ -88,7 +91,7 @@ export default async function PublicQuotePage({
             </thead>
             <tbody>
               {quote.items.map((item) => (
-                <tr key={item.id} className="border-b last:border-b-0">
+                <tr key={item.id} className="border-b last:border-b-0 hover:bg-indigo-soft/40">
                   <td className="px-5 py-3">
                     <p className="font-medium">{item.name}</p>
                     {item.description && (
@@ -109,7 +112,7 @@ export default async function PublicQuotePage({
         </div>
 
         {/* Totals */}
-        <div className="ml-auto max-w-xs space-y-2 text-sm">
+        <div className="ml-auto max-w-xs space-y-2 rounded-md border bg-card p-5 text-sm shadow-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{pq.subtotal}</span>
             <span>{formatCurrency(quote.subtotalCents, locale)}</span>
@@ -120,7 +123,7 @@ export default async function PublicQuotePage({
             </span>
             <span>{formatCurrency(quote.taxCents, locale)}</span>
           </div>
-          <div className="flex justify-between border-t pt-2 font-semibold">
+          <div className="flex justify-between border-t pt-2 font-semibold text-primary">
             <span>{pq.total}</span>
             <span>{formatCurrency(quote.totalCents, locale)}</span>
           </div>
@@ -143,7 +146,7 @@ export default async function PublicQuotePage({
         )}
 
         {quote.status === "ACCEPTED" && (
-          <div className="mt-10 border border-green-200 bg-green-50 p-4 text-center text-sm text-green-700">
+          <div className="mt-10 rounded-md border border-teal/20 bg-secondary p-4 text-center text-sm text-teal">
             {pq.accepted}
           </div>
         )}

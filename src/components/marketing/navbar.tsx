@@ -9,10 +9,11 @@ const navItems = [
 
 export function Navbar() {
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-card/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="text-base font-semibold">
-          QuotePilot
+        <Link href="/" className="flex items-center gap-2 text-base font-semibold">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+          <span>QuotePilot</span>
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {navItems.map((item) => (

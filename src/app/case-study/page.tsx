@@ -21,9 +21,9 @@ export default async function CaseStudyPage() {
   return (
     <main className="text-foreground">
       {/* Hero */}
-      <section className="border-b bg-background">
+      <section className="border-b bg-[linear-gradient(135deg,#eaf0ff_0%,#ffffff_58%,#e0f3ee_100%)]">
         <div className="mx-auto max-w-3xl px-6 py-20">
-          <span className="mb-3 inline-block text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="mb-3 inline-block rounded-full border border-primary/20 bg-card/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             {cs.badge}
           </span>
           <h1 className="text-3xl font-semibold sm:text-4xl">{cs.title}</h1>
@@ -55,9 +55,9 @@ export default async function CaseStudyPage() {
           </h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {stack.map((s) => (
-              <div key={s.name} className="flex items-start gap-3 border bg-background p-3 text-sm">
-                <span className="font-medium">{s.name}</span>
-                <span className="text-muted-foreground">— {s.note}</span>
+              <div key={s.name} className="flex items-start gap-3 rounded-md border bg-card p-3 text-sm shadow-sm">
+                <span className="font-medium text-primary">{s.name}</span>
+                <span className="text-muted-foreground">- {s.note}</span>
               </div>
             ))}
           </div>
@@ -71,7 +71,7 @@ export default async function CaseStudyPage() {
           <ul className="space-y-2">
             {cs.features.map((f) => (
               <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
                 {f}
               </li>
             ))}
@@ -85,7 +85,7 @@ export default async function CaseStudyPage() {
           </h2>
           <div className="space-y-4">
             {cs.decisions.map((d) => (
-              <div key={d.title} className="border-l-2 border-foreground pl-4">
+              <div key={d.title} className="rounded-md border-l-4 border-primary bg-indigo-soft/50 p-4">
                 <p className="font-medium">{d.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{d.desc}</p>
               </div>
@@ -94,14 +94,14 @@ export default async function CaseStudyPage() {
         </div>
 
         {/* Recruiter section */}
-        <div className="border bg-muted/30 p-6">
+        <div className="rounded-md border border-accent/20 bg-accent-soft p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em]">
             {cs.recruiterTitle}
           </h2>
           <ul className="space-y-2">
             {cs.recruiterPoints.map((p) => (
               <li key={p} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 {p}
               </li>
             ))}

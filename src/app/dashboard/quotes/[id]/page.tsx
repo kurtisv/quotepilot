@@ -7,11 +7,11 @@ import { updateQuoteStatus, sendQuoteToClient } from "@/app/actions/quotes";
 import { Button } from "@/components/ui/button";
 
 const statusStyles: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  SENT: "bg-blue-100 text-blue-700",
-  ACCEPTED: "bg-green-100 text-green-700",
-  REJECTED: "bg-red-100 text-red-700",
-  EXPIRED: "bg-orange-100 text-orange-700",
+  DRAFT: "bg-indigo-soft text-primary",
+  SENT: "bg-[#dff3ff] text-[#13739c]",
+  ACCEPTED: "bg-secondary text-teal",
+  REJECTED: "bg-accent-soft text-accent",
+  EXPIRED: "bg-sun-soft text-[#8a6512]",
 };
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +42,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           <p className="mt-1 text-sm text-muted-foreground">{quote.description}</p>
         )}
         <div className="mt-2 flex items-center gap-2">
-          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium ${statusStyles[quote.status] ?? ""}`}>
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[quote.status] ?? ""}`}>
             {q.statusLabels[quote.status as keyof typeof q.statusLabels]}
           </span>
           {quote.validUntil && (

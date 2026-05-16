@@ -19,22 +19,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen flex-col">
       {/* Demo bar */}
-      <div className="border-b bg-black px-6 py-2 text-center text-xs text-white/70">
+      <div className="border-b border-teal/20 bg-secondary px-6 py-2 text-center text-xs font-medium text-secondary-foreground">
         {t.dashboard.demoBar}
       </div>
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="hidden w-56 shrink-0 border-r bg-background lg:block">
+        <aside className="hidden w-56 shrink-0 border-r bg-card lg:block">
           <div className="flex h-14 items-center border-b px-5">
-            <Link href="/" className="text-sm font-semibold">QuotePilot</Link>
+            <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
+              <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+              QuotePilot
+            </Link>
           </div>
           <nav className="p-3 space-y-0.5">
             {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="flex items-center gap-2.5 rounded px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-indigo-soft hover:text-primary"
               >
                 <l.icon className="h-4 w-4" />
                 {l.label}
@@ -46,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Main */}
         <div className="flex flex-1 flex-col">
           {/* Top bar */}
-          <header className="flex h-14 items-center justify-between border-b bg-background px-6">
+          <header className="flex h-14 items-center justify-between border-b bg-card px-6">
             <Link href="/" className="text-sm font-semibold lg:hidden">QuotePilot</Link>
             <div className="flex items-center gap-4 ml-auto">
               <LanguageSwitcher current={lang} />
