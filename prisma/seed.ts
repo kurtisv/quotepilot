@@ -17,12 +17,12 @@ function token() {
 async function main() {
   // Clients
   const camille = await prisma.client.upsert({
-    where: { email: "camille.demo@kvportfolio.dev" },
+    where: { email: "lead@example.com" },
     update: {},
     create: {
-      name: "Camille Moreau",
-      email: "camille.demo@kvportfolio.dev",
-      companyName: "Studio Moreau",
+      name: "Client recu",
+      email: "lead@example.com",
+      companyName: "Projet recu",
       phone: "514-555-0141",
       address: "450 boul. Saint-Laurent, Montreal, QC H2Y 2Y7",
     },

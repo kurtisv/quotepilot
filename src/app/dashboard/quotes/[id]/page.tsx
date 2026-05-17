@@ -81,9 +81,11 @@ export default async function QuoteDetailPage({
                 <input type="hidden" name="status" value="ACCEPTED" />
                 <select
                   name="consultantName"
-                  defaultValue={quote.consultantName ?? "Maya Laurent"}
+                  defaultValue={quote.consultantName ?? ""}
+                  required
                   className="h-9 rounded-md border bg-background px-3 text-sm"
                 >
+                  <option value="" disabled>Choisir un consultant</option>
                   <option>Maya Laurent</option>
                   <option>Noah Bennett</option>
                 </select>
@@ -106,7 +108,7 @@ export default async function QuoteDetailPage({
             </p>
             <Button asChild className="mt-4" size="sm">
               <Link
-                href={`${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}&customerName=${encodeURIComponent(quote.client.name)}&customerEmail=${encodeURIComponent(quote.client.email)}&amount=${quote.totalCents}&consultant=${encodeURIComponent(quote.consultantName ?? "Maya Laurent")}&need=${encodeURIComponent(quote.description ?? quote.title)}&quoteNumber=${encodeURIComponent(quote.quoteNumber)}`}
+                href={`${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}&customerName=${encodeURIComponent(quote.client.name)}&customerEmail=${encodeURIComponent(quote.client.email)}&amount=${quote.totalCents}&consultant=${encodeURIComponent(quote.consultantName ?? "")}&need=${encodeURIComponent(quote.description ?? quote.title)}&quoteNumber=${encodeURIComponent(quote.quoteNumber)}&sourceEventId=${encodeURIComponent(quote.sourceEventId ?? "")}`}
               >
                 Prendre rendez-vous avec ReserveFlow
               </Link>

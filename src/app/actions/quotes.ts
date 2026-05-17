@@ -137,7 +137,16 @@ export async function createQuote(formData: FormData) {
       },
       priority: "NORMAL",
       actionLabel: "Planifier un rendez-vous",
-      actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(parsed.data.flowId ?? "")}&quoteId=${quote.id}`,
+      actionUrl: reserveFlowBookingUrl({
+        flowId: parsed.data.flowId,
+        quoteId: quote.id,
+        customerName: quoteWithClient.client.name,
+        customerEmail: quoteWithClient.client.email,
+        totalCents: quoteWithClient.totalCents,
+        need: quoteWithClient.description ?? quoteWithClient.title,
+        quoteNumber: quoteWithClient.quoteNumber,
+        sourceEventId: parsed.data.sourceEventId,
+      }),
     });
 
     if (parsed.data.flowId && parsed.data.sourceEventId) {
@@ -159,14 +168,68 @@ export async function createQuote(formData: FormData) {
 
 function readLeadPayload(payload: unknown) {
   const data = typeof payload === "object" && payload !== null ? payload as Record<string, unknown> : {};
+  const name = String(data.name ?? "").trim();
+  const email = String(data.email ?? "").trim();
   return {
-    name: String(data.name ?? "Client Luma Studio"),
-    email: String(data.email ?? "camille.demo@kvportfolio.dev"),
+    name: name || "Lead Luma Studio",
+    email,
     phone: typeof data.phone === "string" ? data.phone : undefined,
-    projectType: String(data.projectType ?? "Projet Luma Studio"),
-    budgetRange: String(data.budgetRange ?? "Budget a confirmer"),
+    projectType: String(data.projectType ?? "Projet recu depuis Luma Studio"),
+    budgetRange: String(data.budgetRange ?? ""),
     message: String(data.message ?? "Demande recue depuis Luma Studio."),
   };
+}
+
+function centsFromBudgetRange(budgetRange: string) {
+  const normalized = budgetRange.toLowerCase().replace(/\s+/g, " ");
+  const explicit = normalized.match(/(\d+(?:[.,]\d+)?)\s*(k|000)?/);
+  if (!explicit) return 0;
+
+  const amount = Number(explicit[1].replace(",", "."));
+  if (!Number.isFinite(amount)) return 0;
+
+  if (normalized.includes("under") || normalized.includes("moins")) {
+    return Math.round(amount * 1000 * 100);
+  }
+
+  if (explicit[2] === "k" || normalized.includes("k")) {
+    const numbers = [...normalized.matchAll(/(\d+(?:[.,]\d+)?)/g)]
+      .map((match) => Number(match[1].replace(",", ".")))
+      .filter(Number.isFinite);
+    const chosen = numbers.length > 1 ? numbers[numbers.length - 1] : amount;
+    return Math.round(chosen * 1000 * 100);
+  }
+
+  return Math.round(amount * 100);
+}
+
+function reserveFlowBookingUrl(input: {
+  flowId?: string | null;
+  quoteId: string;
+  customerName: string;
+  customerEmail: string;
+  totalCents: number;
+  consultantName?: string | null;
+  need?: string | null;
+  quoteNumber: string;
+  sourceEventId?: string | null;
+}) {
+  const params = new URLSearchParams({
+    flowId: input.flowId ?? "",
+    quoteId: input.quoteId,
+    customerName: input.customerName,
+    customerEmail: input.customerEmail,
+    amount: String(input.totalCents),
+    consultant: input.consultantName ?? "",
+    need: input.need ?? "",
+    quoteNumber: input.quoteNumber,
+  });
+
+  if (input.sourceEventId) {
+    params.set("sourceEventId", input.sourceEventId);
+  }
+
+  return `${reserveFlowUrl}/booking?${params.toString()}`;
 }
 
 export async function createQuoteFromLead(formData: FormData) {
@@ -179,6 +242,8 @@ export async function createQuoteFromLead(formData: FormData) {
   if (!leadEvent || leadEvent.eventType !== "lead.created") return;
 
   const lead = readLeadPayload(leadEvent.payload);
+  if (!lead.email) return;
+
   const client = await prisma.client.upsert({
     where: { email: lead.email },
     update: {
@@ -198,7 +263,7 @@ export async function createQuoteFromLead(formData: FormData) {
     },
   });
 
-  const subtotalCents = 485000;
+  const subtotalCents = centsFromBudgetRange(lead.budgetRange);
   const taxRateBps = 1498;
   const taxCents = Math.round(subtotalCents * (taxRateBps / 10000));
   const totalCents = subtotalCents + taxCents;
@@ -227,8 +292,8 @@ export async function createQuoteFromLead(formData: FormData) {
       items: {
         create: [
           {
-            name: "Diagnostic et proposition Luma Studio",
-            description: `${lead.projectType} - ${lead.budgetRange}`,
+            name: `Proposition ${lead.projectType}`,
+            description: lead.budgetRange ? `${lead.projectType} - ${lead.budgetRange}` : lead.projectType,
             quantity: 1,
             unitPriceCents: subtotalCents,
             totalCents: subtotalCents,
@@ -259,7 +324,16 @@ export async function createQuoteFromLead(formData: FormData) {
     },
     priority: "HIGH",
     actionLabel: "Planifier avec ReserveFlow",
-    actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(leadEvent.flowId)}&quoteId=${quote.id}`,
+    actionUrl: reserveFlowBookingUrl({
+      flowId: leadEvent.flowId,
+      quoteId: quote.id,
+      customerName: client.name,
+      customerEmail: client.email,
+      totalCents: quote.totalCents,
+      need: quote.description ?? quote.title,
+      quoteNumber: quote.quoteNumber,
+      sourceEventId: leadEvent.id,
+    }),
   });
 
   await linkEcosystemEntities({
@@ -331,7 +405,17 @@ export async function updateQuoteStatus(formData: FormData) {
       },
       priority: "HIGH",
       actionLabel: "Creer le rendez-vous",
-      actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}`,
+      actionUrl: reserveFlowBookingUrl({
+        flowId: quote.flowId,
+        quoteId: quote.id,
+        customerName: quote.client.name,
+        customerEmail: quote.client.email,
+        totalCents: quote.totalCents,
+        consultantName: quote.consultantName,
+        need: quote.description ?? quote.title,
+        quoteNumber: quote.quoteNumber,
+        sourceEventId: quote.sourceEventId,
+      }),
     });
 
     if (quote.consultantName) {
@@ -353,7 +437,17 @@ export async function updateQuoteStatus(formData: FormData) {
         },
         priority: "NORMAL",
         actionLabel: "Planifier avec ReserveFlow",
-        actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}`,
+        actionUrl: reserveFlowBookingUrl({
+          flowId: quote.flowId,
+          quoteId: quote.id,
+          customerName: quote.client.name,
+          customerEmail: quote.client.email,
+          totalCents: quote.totalCents,
+          consultantName: quote.consultantName,
+          need: quote.description ?? quote.title,
+          quoteNumber: quote.quoteNumber,
+          sourceEventId: quote.sourceEventId,
+        }),
       });
     }
   }
@@ -475,6 +569,16 @@ export async function acceptQuotePublic(token: string) {
     },
     priority: "HIGH",
     actionLabel: "Planifier un rendez-vous",
-    actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(updated.flowId ?? "")}&quoteId=${updated.id}`,
+    actionUrl: reserveFlowBookingUrl({
+      flowId: updated.flowId,
+      quoteId: updated.id,
+      customerName: updated.client.name,
+      customerEmail: updated.client.email,
+      totalCents: updated.totalCents,
+      consultantName: updated.consultantName,
+      need: updated.description ?? updated.title,
+      quoteNumber: updated.quoteNumber,
+      sourceEventId: updated.sourceEventId,
+    }),
   });
 }
