@@ -67,10 +67,14 @@ model Client {
   companyName String?
   phone       String?
   address     String?
+  sourceApp   String?
+  sourceEventId String?
+  flowId      String?
   quotes      Quote[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([flowId])
   @@schema("quotepilot")
 }
 
@@ -92,11 +96,17 @@ model Quote {
   sentAt        DateTime?
   acceptedAt    DateTime?
   rejectedAt    DateTime?
+  flowId        String?
+  sourceApp     String?
+  sourceEventId String?
+  consultantName String?
+  contextJson   Json?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([clientId])
   @@index([status])
+  @@index([flowId])
   @@schema("quotepilot")
 }
 

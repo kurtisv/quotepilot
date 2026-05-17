@@ -83,6 +83,21 @@ export async function getIncomingEcosystemNotifications(appKey: string, take = 6
   }
 }
 
+export async function getIncomingEcosystemEvents(appKey: string, eventType?: string, take = 10) {
+  try {
+    return await prisma.ecosystemEvent.findMany({
+      where: {
+        targetApp: appKey,
+        ...(eventType ? { eventType } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getRecentEcosystemEvents(take = 20) {
   try {
     return await prisma.ecosystemEvent.findMany({
@@ -91,6 +106,22 @@ export async function getRecentEcosystemEvents(take = 20) {
     });
   } catch {
     return [];
+  }
+}
+
+export async function linkEcosystemEntities(input: {
+  flowId: string;
+  fromApp: string;
+  fromEntityType: string;
+  fromEntityId: string;
+  toApp: string;
+  toEntityType: string;
+  toEntityId?: string;
+}) {
+  try {
+    return await prisma.ecosystemEntityLink.create({ data: input });
+  } catch {
+    return null;
   }
 }
 

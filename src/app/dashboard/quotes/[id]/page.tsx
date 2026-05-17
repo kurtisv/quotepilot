@@ -14,8 +14,17 @@ const statusStyles: Record<string, string> = {
   EXPIRED: "bg-warning-soft text-warning",
 };
 
-export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+const reserveFlowUrl = process.env.NEXT_PUBLIC_RESERVEFLOW_URL ?? "https://reserveflow-psi.vercel.app";
+
+export default async function QuoteDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ emailPreview?: string }>;
+}) {
   const [{ id }, t] = await Promise.all([params, getT()]);
+  const query = (await searchParams) ?? {};
   const q = t.quotes;
   const locale = t.lang === "fr" ? "fr-CA" : "en-CA";
 
@@ -51,6 +60,59 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </span>
           )}
         </div>
+
+        {query.emailPreview === "1" ? (
+          <section className="mt-6 rounded-md border border-primary/30 bg-primary-soft p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Nouveau courriel recu
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">
+              Soumission {quote.quoteNumber} - Luma Studio
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Montant: {formatCurrency(quote.totalCents, locale)}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/quote/${quote.publicToken}`}>Voir les details</Link>
+              </Button>
+              <form action={updateQuoteStatus} className="flex flex-wrap gap-2">
+                <input type="hidden" name="quoteId" value={quote.id} />
+                <input type="hidden" name="status" value="ACCEPTED" />
+                <select
+                  name="consultantName"
+                  defaultValue={quote.consultantName ?? "Maya Laurent"}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option>Maya Laurent</option>
+                  <option>Noah Bennett</option>
+                </select>
+                <Button type="submit" size="sm">Accepter la soumission</Button>
+              </form>
+            </div>
+          </section>
+        ) : null}
+
+        {quote.status === "ACCEPTED" ? (
+          <section className="mt-6 rounded-md border bg-success-soft p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-success">
+              Soumission acceptee
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">
+              Choisissez maintenant un consultant pour planifier le rendez-vous.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Consultant: {quote.consultantName ?? "A choisir"} · Flow: {quote.flowId ?? "non lie"}
+            </p>
+            <Button asChild className="mt-4" size="sm">
+              <Link
+                href={`${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}&customerName=${encodeURIComponent(quote.client.name)}&customerEmail=${encodeURIComponent(quote.client.email)}&amount=${quote.totalCents}&consultant=${encodeURIComponent(quote.consultantName ?? "Maya Laurent")}&need=${encodeURIComponent(quote.description ?? quote.title)}&quoteNumber=${encodeURIComponent(quote.quoteNumber)}`}
+              >
+                Prendre rendez-vous avec ReserveFlow
+              </Link>
+            </Button>
+          </section>
+        ) : null}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
           {/* Main: line items + totals */}

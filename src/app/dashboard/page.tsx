@@ -4,6 +4,8 @@ import { getT } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/quote-utils";
 import { Button } from "@/components/ui/button";
 import { EcosystemNotificationPanel } from "@/components/ecosystem/notification-panel";
+import { createQuoteFromLead } from "@/app/actions/quotes";
+import { getIncomingEcosystemEvents } from "@/lib/ecosystem";
 
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-primary-soft text-primary",
@@ -18,7 +20,7 @@ export default async function DashboardPage() {
   const d = t.dashboard;
   const locale = t.lang === "fr" ? "fr-CA" : "en-CA";
 
-  const [clientCount, quoteStats, recentQuotes] = await Promise.all([
+  const [clientCount, quoteStats, recentQuotes, lumaLeads] = await Promise.all([
     prisma.client.count(),
     prisma.quote.groupBy({ by: ["status"], _count: true, _sum: { totalCents: true } }),
     prisma.quote.findMany({
@@ -26,6 +28,7 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       include: { client: true },
     }),
+    getIncomingEcosystemEvents("quotepilot", "lead.created", 6),
   ]);
 
   const total = quoteStats.reduce((s, g) => s + g._count, 0);
@@ -70,6 +73,65 @@ export default async function DashboardPage() {
         <div className="mb-10">
           <EcosystemNotificationPanel appKey="quotepilot" />
         </div>
+
+        <section className="mb-10 rounded-md border bg-card shadow-sm">
+          <div className="border-b p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Nouveautes de l'ecosysteme
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">Nouveaux leads recus</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Les demandes Luma Studio arrivent ici pour etre converties en soumission QuotePilot.
+            </p>
+          </div>
+          <div className="divide-y">
+            {lumaLeads.map((lead) => {
+              const payload = typeof lead.payload === "object" && lead.payload !== null
+                ? lead.payload as Record<string, unknown>
+                : {};
+              return (
+                <article key={lead.id} className="grid gap-4 p-5 lg:grid-cols-[1fr_auto]">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
+                        Source: Luma Studio
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">{lead.flowId}</span>
+                    </div>
+                    <h3 className="mt-3 font-semibold">{String(lead.customerName ?? payload.name ?? "Lead Luma")}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{String(lead.customerEmail ?? payload.email ?? "")}</p>
+                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Projet</dt>
+                        <dd className="mt-1">{String(payload.projectType ?? "-")}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Budget</dt>
+                        <dd className="mt-1">{String(payload.budgetRange ?? "-")}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Statut</dt>
+                        <dd className="mt-1">Nouveau</dd>
+                      </div>
+                    </dl>
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                      {String(payload.message ?? lead.description ?? "")}
+                    </p>
+                  </div>
+                  <form action={createQuoteFromLead} className="self-center">
+                    <input type="hidden" name="eventId" value={lead.id} />
+                    <Button type="submit">Creer une soumission</Button>
+                  </form>
+                </article>
+              );
+            })}
+            {lumaLeads.length === 0 ? (
+              <p className="p-5 text-sm text-muted-foreground">
+                Aucun lead Luma pour l'instant. Soumets une demande dans Luma Studio pour demarrer le parcours.
+              </p>
+            ) : null}
+          </div>
+        </section>
 
         {/* Recent quotes */}
         <div>

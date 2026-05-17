@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { requireDashboardAccess } from "@/lib/dashboard-auth";
 import { prisma } from "@/lib/db";
-import { publishEcosystemEvent } from "@/lib/ecosystem";
+import { linkEcosystemEntities, publishEcosystemEvent } from "@/lib/ecosystem";
 import { sendTransactionalEmail } from "@/lib/email/resend";
 import { QuoteEmail } from "@/emails/quote-created";
 import {
@@ -14,6 +14,8 @@ import {
   generatePublicToken,
   generateQuoteNumber,
 } from "@/lib/quote-utils";
+
+const reserveFlowUrl = process.env.NEXT_PUBLIC_RESERVEFLOW_URL ?? "https://reserveflow-psi.vercel.app";
 
 const itemSchema = z.object({
   name: z.string().min(1).max(200),
@@ -28,6 +30,9 @@ const createQuoteSchema = z.object({
   description: z.string().max(1000).optional(),
   taxRatePercent: z.coerce.number().min(0).max(50).default(14.975),
   validUntil: z.string().optional(),
+  flowId: z.string().optional(),
+  sourceApp: z.string().optional(),
+  sourceEventId: z.string().optional(),
   items: z.array(itemSchema).min(1),
 });
 
@@ -55,6 +60,9 @@ export async function createQuote(formData: FormData) {
     description: formData.get("description") || undefined,
     taxRatePercent,
     validUntil: formData.get("validUntil") || undefined,
+    flowId: formData.get("flowId") || undefined,
+    sourceApp: formData.get("sourceApp") || undefined,
+    sourceEventId: formData.get("sourceEventId") || undefined,
     items: rawItems,
   });
 
@@ -85,6 +93,12 @@ export async function createQuote(formData: FormData) {
       totalCents,
       publicToken,
       validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : null,
+      flowId: parsed.data.flowId,
+      sourceApp: parsed.data.sourceApp,
+      sourceEventId: parsed.data.sourceEventId,
+      contextJson: parsed.data.sourceEventId
+        ? { sourceEventId: parsed.data.sourceEventId, sourceApp: parsed.data.sourceApp }
+        : undefined,
       items: {
         create: parsed.data.items.map((item, idx) => ({
           name: item.name,
@@ -105,6 +119,7 @@ export async function createQuote(formData: FormData) {
 
   if (quoteWithClient) {
     await publishEcosystemEvent({
+      flowId: parsed.data.flowId,
       sourceApp: "quotepilot",
       targetApps: ["reserveflow", "clienthub", "api-meter"],
       eventType: "quote.created",
@@ -122,17 +137,150 @@ export async function createQuote(formData: FormData) {
       },
       priority: "NORMAL",
       actionLabel: "Planifier un rendez-vous",
-      actionUrl: "/booking",
+      actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(parsed.data.flowId ?? "")}&quoteId=${quote.id}`,
     });
+
+    if (parsed.data.flowId && parsed.data.sourceEventId) {
+      await linkEcosystemEntities({
+        flowId: parsed.data.flowId,
+        fromApp: parsed.data.sourceApp ?? "luma-studio",
+        fromEntityType: "lead",
+        fromEntityId: parsed.data.sourceEventId,
+        toApp: "quotepilot",
+        toEntityType: "quote",
+        toEntityId: quote.id,
+      });
+    }
   }
 
   revalidatePath("/dashboard/quotes");
   redirect(`/dashboard/quotes/${quote.id}`);
 }
 
+function readLeadPayload(payload: unknown) {
+  const data = typeof payload === "object" && payload !== null ? payload as Record<string, unknown> : {};
+  return {
+    name: String(data.name ?? "Client Luma Studio"),
+    email: String(data.email ?? "lead@example.com"),
+    phone: typeof data.phone === "string" ? data.phone : undefined,
+    projectType: String(data.projectType ?? "Projet Luma Studio"),
+    budgetRange: String(data.budgetRange ?? "Budget a confirmer"),
+    message: String(data.message ?? "Demande recue depuis Luma Studio."),
+  };
+}
+
+export async function createQuoteFromLead(formData: FormData) {
+  await requireDashboardAccess();
+
+  const eventId = String(formData.get("eventId") ?? "");
+  if (!eventId) return;
+
+  const leadEvent = await prisma.ecosystemEvent.findUnique({ where: { id: eventId } });
+  if (!leadEvent || leadEvent.eventType !== "lead.created") return;
+
+  const lead = readLeadPayload(leadEvent.payload);
+  const client = await prisma.client.upsert({
+    where: { email: lead.email },
+    update: {
+      name: lead.name,
+      phone: lead.phone,
+      sourceApp: leadEvent.sourceApp,
+      sourceEventId: leadEvent.id,
+      flowId: leadEvent.flowId,
+    },
+    create: {
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      sourceApp: leadEvent.sourceApp,
+      sourceEventId: leadEvent.id,
+      flowId: leadEvent.flowId,
+    },
+  });
+
+  const subtotalCents = 485000;
+  const taxRateBps = 1498;
+  const taxCents = Math.round(subtotalCents * (taxRateBps / 10000));
+  const totalCents = subtotalCents + taxCents;
+  const quoteNumber = await generateQuoteNumber(() => prisma.quote.count());
+  const publicToken = generatePublicToken();
+
+  const quote = await prisma.quote.create({
+    data: {
+      quoteNumber,
+      title: `Soumission ${lead.projectType}`,
+      description: lead.message,
+      clientId: client.id,
+      taxRateBps,
+      subtotalCents,
+      taxCents,
+      totalCents,
+      publicToken,
+      flowId: leadEvent.flowId,
+      sourceApp: leadEvent.sourceApp,
+      sourceEventId: leadEvent.id,
+      contextJson: {
+        lead,
+        sourceEventId: leadEvent.id,
+        sourceApp: leadEvent.sourceApp,
+      },
+      items: {
+        create: [
+          {
+            name: "Diagnostic et proposition Luma Studio",
+            description: `${lead.projectType} - ${lead.budgetRange}`,
+            quantity: 1,
+            unitPriceCents: subtotalCents,
+            totalCents: subtotalCents,
+            position: 0,
+          },
+        ],
+      },
+    },
+  });
+
+  await publishEcosystemEvent({
+    flowId: leadEvent.flowId,
+    sourceApp: "quotepilot",
+    targetApps: ["reserveflow", "clienthub", "api-meter"],
+    eventType: "quote.created",
+    entityType: "quote",
+    entityId: quote.id,
+    customerName: client.name,
+    customerEmail: client.email,
+    title: "Soumission creee depuis un lead Luma",
+    description: `${quote.quoteNumber} transforme la demande Luma en soumission QuotePilot.`,
+    payload: {
+      quoteNumber: quote.quoteNumber,
+      title: quote.title,
+      totalCents: quote.totalCents,
+      leadEventId: leadEvent.id,
+      flowId: leadEvent.flowId,
+    },
+    priority: "HIGH",
+    actionLabel: "Planifier avec ReserveFlow",
+    actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(leadEvent.flowId)}&quoteId=${quote.id}`,
+  });
+
+  await linkEcosystemEntities({
+    flowId: leadEvent.flowId,
+    fromApp: leadEvent.sourceApp,
+    fromEntityType: "lead",
+    fromEntityId: leadEvent.id,
+    toApp: "quotepilot",
+    toEntityType: "quote",
+    toEntityId: quote.id,
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/quotes");
+  redirect(`/dashboard/quotes/${quote.id}?emailPreview=1`);
+}
+
 const updateStatusSchema = z.object({
   quoteId: z.string().min(1),
   status: z.enum(["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED"]),
+  consultantName: z.string().optional(),
 });
 
 export async function updateQuoteStatus(formData: FormData) {
@@ -141,6 +289,7 @@ export async function updateQuoteStatus(formData: FormData) {
   const parsed = updateStatusSchema.safeParse({
     quoteId: formData.get("quoteId"),
     status: formData.get("status"),
+    consultantName: formData.get("consultantName") || undefined,
   });
 
   if (!parsed.success) return;
@@ -153,12 +302,17 @@ export async function updateQuoteStatus(formData: FormData) {
 
   const quote = await prisma.quote.update({
     where: { id: parsed.data.quoteId },
-    data: { status: parsed.data.status, ...extra },
+    data: {
+      status: parsed.data.status,
+      ...extra,
+      ...(parsed.data.consultantName ? { consultantName: parsed.data.consultantName } : {}),
+    },
     include: { client: true },
   });
 
   if (parsed.data.status === "ACCEPTED") {
     await publishEcosystemEvent({
+      flowId: quote.flowId ?? undefined,
       sourceApp: "quotepilot",
       targetApps: ["reserveflow", "clienthub", "api-meter"],
       eventType: "quote.accepted",
@@ -172,10 +326,12 @@ export async function updateQuoteStatus(formData: FormData) {
         quoteNumber: quote.quoteNumber,
         totalCents: quote.totalCents,
         status: quote.status,
+        consultantName: quote.consultantName,
+        flowId: quote.flowId,
       },
       priority: "HIGH",
       actionLabel: "Creer le rendez-vous",
-      actionUrl: "/booking",
+      actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}`,
     });
   }
 
@@ -231,6 +387,7 @@ export async function acceptQuotePublic(token: string) {
   });
 
   await publishEcosystemEvent({
+    flowId: updated.flowId ?? undefined,
     sourceApp: "quotepilot",
     targetApps: ["reserveflow", "clienthub", "api-meter"],
     eventType: "quote.accepted",
@@ -244,9 +401,11 @@ export async function acceptQuotePublic(token: string) {
       quoteNumber: updated.quoteNumber,
       totalCents: updated.totalCents,
       status: updated.status,
+      consultantName: updated.consultantName,
+      flowId: updated.flowId,
     },
     priority: "HIGH",
     actionLabel: "Planifier un rendez-vous",
-    actionUrl: "/booking",
+    actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(updated.flowId ?? "")}&quoteId=${updated.id}`,
   });
 }
