@@ -241,6 +241,15 @@ export async function createQuoteFromLead(formData: FormData) {
   const leadEvent = await prisma.ecosystemEvent.findUnique({ where: { id: eventId } });
   if (!leadEvent || leadEvent.eventType !== "lead.created") return;
 
+  const existingQuote = await prisma.quote.findFirst({
+    where: { sourceEventId: leadEvent.id },
+    select: { id: true },
+  });
+
+  if (existingQuote) {
+    redirect(`/dashboard/quotes/${existingQuote.id}?emailPreview=1`);
+  }
+
   const lead = readLeadPayload(leadEvent.payload);
   if (!lead.email) return;
 
@@ -385,10 +394,9 @@ export async function updateQuoteStatus(formData: FormData) {
   });
 
   if (parsed.data.status === "ACCEPTED") {
-    await publishEcosystemEvent({
-      flowId: quote.flowId ?? undefined,
+    const acceptedHandoff = {
+      flowId: quote.flowId,
       sourceApp: "quotepilot",
-      targetApps: ["reserveflow", "clienthub", "api-meter"],
       eventType: "quote.accepted",
       entityType: "quote",
       entityId: quote.id,
@@ -403,8 +411,8 @@ export async function updateQuoteStatus(formData: FormData) {
         consultantName: quote.consultantName,
         flowId: quote.flowId,
       },
-      priority: "HIGH",
-      actionLabel: "Creer le rendez-vous",
+      priority: "HIGH" as const,
+      actionLabel: "Planifier avec ReserveFlow",
       actionUrl: reserveFlowBookingUrl({
         flowId: quote.flowId,
         quoteId: quote.id,
@@ -416,7 +424,19 @@ export async function updateQuoteStatus(formData: FormData) {
         quoteNumber: quote.quoteNumber,
         sourceEventId: quote.sourceEventId,
       }),
+    };
+
+    await publishEcosystemEvent({
+      ...acceptedHandoff,
+      flowId: quote.flowId ?? undefined,
+      targetApps: ["reserveflow", "clienthub", "api-meter"],
+      actionLabel: "Creer le rendez-vous",
     });
+
+    await Promise.all([
+      sendEcosystemHandoff(process.env.RESERVEFLOW_INGEST_URL ?? "https://reserveflow-psi.vercel.app/api/ecosystem/ingest", acceptedHandoff),
+      sendEcosystemHandoff(process.env.API_METER_INGEST_URL ?? "https://api-meter.vercel.app/api/ecosystem/ingest", acceptedHandoff),
+    ]);
 
     if (quote.consultantName) {
       await publishEcosystemEvent({
@@ -479,6 +499,10 @@ export async function updateQuoteStatus(formData: FormData) {
   revalidatePath(`/dashboard/quotes/${parsed.data.quoteId}`);
   revalidatePath("/dashboard/quotes");
   revalidatePath("/dashboard");
+
+  if (parsed.data.status === "ACCEPTED") {
+    redirect(`/dashboard/quotes/${parsed.data.quoteId}`);
+  }
 }
 
 export async function sendQuoteToClient(formData: FormData) {
@@ -581,4 +605,19 @@ export async function acceptQuotePublic(token: string) {
       sourceEventId: updated.sourceEventId,
     }),
   });
+}
+
+async function sendEcosystemHandoff(url: string, body: Record<string, unknown>) {
+  if (!body.flowId) return;
+
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error("Ecosystem handoff failed", error);
+  }
 }

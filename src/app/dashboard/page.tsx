@@ -43,6 +43,13 @@ export default async function DashboardPage() {
     getIncomingEcosystemEvents("quotepilot", "lead.created", 6),
   ]);
   const { clientCount, quoteStats, recentQuotes } = dashboardData;
+  const quoteLinks = lumaLeads.length > 0
+    ? await prisma.quote.findMany({
+        where: { sourceEventId: { in: lumaLeads.map((lead) => lead.id) } },
+        select: { id: true, sourceEventId: true, quoteNumber: true, status: true, consultantName: true },
+      }).catch(() => [])
+    : [];
+  const quoteByLeadId = new Map(quoteLinks.map((quote) => [quote.sourceEventId, quote]));
 
   const total = quoteStats.reduce((s, g) => s + g._count, 0);
   const drafts = quoteStats.find((g) => g.status === "DRAFT")?._count ?? 0;
@@ -152,6 +159,7 @@ export default async function DashboardPage() {
               const payload = typeof lead.payload === "object" && lead.payload !== null
                 ? lead.payload as Record<string, unknown>
                 : {};
+              const linkedQuote = quoteByLeadId.get(lead.id);
               return (
                 <article key={lead.id} className="grid gap-4 p-5 lg:grid-cols-[1fr_auto]">
                   <div>
@@ -174,7 +182,7 @@ export default async function DashboardPage() {
                       </div>
                       <div>
                         <dt className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Statut</dt>
-                        <dd className="mt-1">Nouveau</dd>
+                        <dd className="mt-1">{linkedQuote ? `Soumission ${linkedQuote.status}` : "Nouveau"}</dd>
                       </div>
                     </dl>
                     <p className="mt-4 text-sm leading-6 text-muted-foreground">
@@ -193,7 +201,15 @@ export default async function DashboardPage() {
                   </div>
                   <form action={createQuoteFromLead} className="self-center">
                     <input type="hidden" name="eventId" value={lead.id} />
-                    <Button type="submit">Creer une soumission</Button>
+                    {linkedQuote ? (
+                      <Button asChild>
+                        <Link href={`/dashboard/quotes/${linkedQuote.id}?emailPreview=1`}>
+                          Continuer {linkedQuote.quoteNumber}
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button type="submit">Creer une soumission</Button>
+                    )}
                   </form>
                 </article>
               );
