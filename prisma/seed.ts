@@ -17,11 +17,11 @@ function token() {
 async function main() {
   // Clients
   const mara = await prisma.client.upsert({
-    where: { email: "mara@northlinestudio.ca" },
+    where: { email: "lead@northlinestudio.ca" },
     update: {},
     create: {
-      name: "Mara Chen",
-      email: "mara@northlinestudio.ca",
+      name: "Lead Luma entrant",
+      email: "lead@northlinestudio.ca",
       companyName: "Northline Studio",
       phone: "514-555-0141",
       address: "450 boul. Saint-Laurent, Montreal, QC H2Y 2Y7",
