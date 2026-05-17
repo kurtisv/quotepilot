@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["quotepilot"]
+  schemas  = ["public", "quotepilot"]
 }
 
 model User {
@@ -133,3 +133,65 @@ enum Role {
 
   @@schema("quotepilot")
 }
+
+model EcosystemEvent {
+  id            String   @id @default(cuid())
+  flowId        String
+  sourceApp     String
+  targetApp     String?
+  eventType     String
+  entityType    String
+  entityId      String?
+  customerName  String?
+  customerEmail String?
+  title         String
+  description   String?
+  payload       Json?
+  status        String   @default("NEW")
+  createdAt     DateTime @default(now())
+  readAt        DateTime?
+
+  @@index([flowId])
+  @@index([sourceApp])
+  @@index([targetApp])
+  @@index([eventType])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model EcosystemNotification {
+  id          String   @id @default(cuid())
+  appKey      String
+  eventId     String
+  title       String
+  message     String
+  priority    String   @default("NORMAL")
+  isRead      Boolean  @default(false)
+  actionLabel String?
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+
+  @@index([appKey])
+  @@index([eventId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model EcosystemEntityLink {
+  id             String   @id @default(cuid())
+  flowId         String
+  fromApp        String
+  fromEntityType String
+  fromEntityId   String
+  toApp          String
+  toEntityType   String
+  toEntityId     String?
+  createdAt      DateTime @default(now())
+
+  @@index([flowId])
+  @@index([fromApp])
+  @@index([toApp])
+  @@schema("public")
+}
+

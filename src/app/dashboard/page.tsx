@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getT } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/quote-utils";
 import { Button } from "@/components/ui/button";
+import { EcosystemNotificationPanel } from "@/components/ecosystem/notification-panel";
 
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-primary-soft text-primary",
@@ -64,6 +65,10 @@ export default async function DashboardPage() {
               <p className="mt-2 text-2xl font-semibold">{s.value}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mb-10">
+          <EcosystemNotificationPanel appKey="quotepilot" />
         </div>
 
         {/* Recent quotes */}
