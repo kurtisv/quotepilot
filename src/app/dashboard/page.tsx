@@ -17,21 +17,32 @@ const statusStyles: Record<string, string> = {
 
 const timeline = ["Luma Studio", "QuotePilot", "ReserveFlow", "ClientHub", "CommerceKit", "EventPass", "SupportDesk Lite", "API Meter"];
 
+const productCards = [
+  ["Lead inbox", "Recoit les demandes Luma avec source, message, budget et flowId."],
+  ["Quote builder", "Transforme le lead en client, lignes de prix, taxes et statut."],
+  ["Acceptance flow", "Simule le courriel recu, l'acceptation et le choix consultant."],
+];
+
 export default async function DashboardPage() {
   const t = await getT();
   const d = t.dashboard;
   const locale = t.lang === "fr" ? "fr-CA" : "en-CA";
 
-  const [clientCount, quoteStats, recentQuotes, lumaLeads] = await Promise.all([
-    prisma.client.count(),
-    prisma.quote.groupBy({ by: ["status"], _count: true, _sum: { totalCents: true } }),
-    prisma.quote.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { client: true },
-    }),
+  const [dashboardData, lumaLeads] = await Promise.all([
+    Promise.all([
+      prisma.client.count(),
+      prisma.quote.groupBy({ by: ["status"], _count: true, _sum: { totalCents: true } }),
+      prisma.quote.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { client: true },
+      }),
+    ])
+      .then(([clientCount, quoteStats, recentQuotes]) => ({ clientCount, quoteStats, recentQuotes }))
+      .catch(() => ({ clientCount: 0, quoteStats: [], recentQuotes: [] })),
     getIncomingEcosystemEvents("quotepilot", "lead.created", 6),
   ]);
+  const { clientCount, quoteStats, recentQuotes } = dashboardData;
 
   const total = quoteStats.reduce((s, g) => s + g._count, 0);
   const drafts = quoteStats.find((g) => g.status === "DRAFT")?._count ?? 0;
@@ -51,18 +62,32 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="bg-[linear-gradient(180deg,#fbfaf6_0%,#ffffff_42%)] px-6 py-10">
+    <div className="bg-[linear-gradient(180deg,#fbfaf6_0%,#fffdf7_42%,#ffffff_100%)] px-6 py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_0.9fr] lg:items-end">
           <div>
             <p className="mb-2 inline-flex border bg-primary-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
               KV Portfolio Ecosystem - Demo Mode
             </p>
-            <h1 className="text-2xl font-semibold">{d.title}</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Sales pipeline / proposal workflow
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold">{d.title}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+              QuotePilot montre le passage lead - client - soumission - acceptation.
+              Les donnees visibles viennent de la demande Luma quand elle existe.
+            </p>
           </div>
-          <Button asChild size="sm">
-            <Link href="/dashboard/quotes/new">{d.newQuote}</Link>
-          </Button>
+          <section className="rounded-md border bg-card p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Ce que tu peux tester ici
+            </p>
+            <div className="mt-3 grid gap-2 text-sm">
+              <p><span className="font-semibold">Recoit:</span> lead.created depuis Luma Studio.</p>
+              <p><span className="font-semibold">Transmet:</span> quote.accepted et consultant.selected vers ReserveFlow.</p>
+              <p><span className="font-semibold">Boilerplate:</span> CRUD, Prisma, server actions, popup de courriel demo.</p>
+            </div>
+          </section>
         </div>
 
         {/* Stats */}
@@ -80,6 +105,27 @@ export default async function DashboardPage() {
         <div className="mb-10">
           <EcosystemNotificationPanel appKey="quotepilot" />
         </div>
+        <section className="mb-10 rounded-md border bg-card p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Proposition workspace
+              </p>
+              <h2 className="mt-2 text-lg font-semibold">Ce que le recruteur doit voir</h2>
+            </div>
+            <Button asChild size="sm">
+              <Link href="/dashboard/quotes/new">{d.newQuote}</Link>
+            </Button>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {productCards.map(([title, text]) => (
+              <article key={title} className="rounded-md border bg-background p-4">
+                <h3 className="font-semibold">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
         <section className="mb-10 rounded-md border bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Timeline du parcours</p>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
@@ -134,6 +180,16 @@ export default async function DashboardPage() {
                     <p className="mt-4 text-sm leading-6 text-muted-foreground">
                       {String(payload.message ?? lead.description ?? "")}
                     </p>
+                    <div className="mt-4 rounded-md border bg-background p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        Preview de soumission
+                      </p>
+                      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                        <span>Client: {String(lead.customerName ?? payload.name ?? "lead")}</span>
+                        <span>Budget: {String(payload.budgetRange ?? "-")}</span>
+                        <span>Prochaine etape: ReserveFlow</span>
+                      </div>
+                    </div>
                   </div>
                   <form action={createQuoteFromLead} className="self-center">
                     <input type="hidden" name="eventId" value={lead.id} />
@@ -143,9 +199,12 @@ export default async function DashboardPage() {
               );
             })}
             {lumaLeads.length === 0 ? (
-              <p className="p-5 text-sm text-muted-foreground">
-                Aucun lead Luma pour l&apos;instant. Soumets une demande dans Luma Studio pour demarrer le parcours.
-              </p>
+              <div className="p-5">
+                <p className="rounded-md border bg-background p-4 text-sm text-muted-foreground">
+                  Aucun lead Luma pour l&apos;instant. Soumets une demande dans Luma Studio;
+                  le nom, email, projet, budget, message et flowId apparaitront ici sans donnees forcees.
+                </p>
+              </div>
             ) : null}
           </div>
         </section>
