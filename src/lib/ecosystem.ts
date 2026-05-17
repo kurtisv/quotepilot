@@ -56,6 +56,7 @@ export async function publishEcosystemEvent(input: PublishEcosystemEventInput) {
       data: targetApps.map((appKey) => ({
         appKey,
         eventId: event.id,
+        flowId,
         title: input.notificationTitle ?? input.title,
         message: input.notificationMessage ?? input.description ?? input.title,
         priority: input.priority ?? "NORMAL",

@@ -15,6 +15,8 @@ const statusStyles: Record<string, string> = {
   EXPIRED: "bg-warning-soft text-warning",
 };
 
+const timeline = ["Luma Studio", "QuotePilot", "ReserveFlow", "ClientHub", "CommerceKit", "EventPass", "SupportDesk Lite", "API Meter"];
+
 export default async function DashboardPage() {
   const t = await getT();
   const d = t.dashboard;
@@ -52,7 +54,12 @@ export default async function DashboardPage() {
     <div className="bg-[linear-gradient(180deg,#fbfaf6_0%,#ffffff_42%)] px-6 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{d.title}</h1>
+          <div>
+            <p className="mb-2 inline-flex border bg-primary-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              KV Portfolio Ecosystem - Demo Mode
+            </p>
+            <h1 className="text-2xl font-semibold">{d.title}</h1>
+          </div>
           <Button asChild size="sm">
             <Link href="/dashboard/quotes/new">{d.newQuote}</Link>
           </Button>
@@ -73,11 +80,21 @@ export default async function DashboardPage() {
         <div className="mb-10">
           <EcosystemNotificationPanel appKey="quotepilot" />
         </div>
+        <section className="mb-10 rounded-md border bg-card p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Timeline du parcours</p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+            {timeline.map((item, index) => (
+              <span key={item} className={index === 1 ? "rounded-md bg-primary px-3 py-2 text-primary-foreground" : "rounded-md border bg-background px-3 py-2"}>
+                {String(index + 1).padStart(2, "0")} {item}
+              </span>
+            ))}
+          </div>
+        </section>
 
         <section className="mb-10 rounded-md border bg-card shadow-sm">
           <div className="border-b p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Nouveautes de l'ecosysteme
+              Nouveautes de l&apos;ecosysteme
             </p>
             <h2 className="mt-2 text-lg font-semibold">Nouveaux leads recus</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -127,7 +144,7 @@ export default async function DashboardPage() {
             })}
             {lumaLeads.length === 0 ? (
               <p className="p-5 text-sm text-muted-foreground">
-                Aucun lead Luma pour l'instant. Soumets une demande dans Luma Studio pour demarrer le parcours.
+                Aucun lead Luma pour l&apos;instant. Soumets une demande dans Luma Studio pour demarrer le parcours.
               </p>
             ) : null}
           </div>

@@ -16,13 +16,13 @@ function token() {
 
 async function main() {
   // Clients
-  const mara = await prisma.client.upsert({
-    where: { email: "lead@northlinestudio.ca" },
+  const camille = await prisma.client.upsert({
+    where: { email: "camille.demo@kvportfolio.dev" },
     update: {},
     create: {
-      name: "Lead Luma entrant",
-      email: "lead@northlinestudio.ca",
-      companyName: "Northline Studio",
+      name: "Camille Moreau",
+      email: "camille.demo@kvportfolio.dev",
+      companyName: "Studio Moreau",
       phone: "514-555-0141",
       address: "450 boul. Saint-Laurent, Montreal, QC H2Y 2Y7",
     },
@@ -62,7 +62,7 @@ async function main() {
       title: "Northline launch workspace",
       description: "Proposal created from the Luma Studio inquiry, then scheduled through ReserveFlow and delivered in ClientHub.",
       status: "ACCEPTED",
-      clientId: mara.id,
+      clientId: camille.id,
       taxRateBps: 1498,
       subtotalCents: 2400000,
       taxCents: 359520,
@@ -142,7 +142,7 @@ async function main() {
       title: "Event and API credit expansion",
       description: "Optional add-on that sells workshop seats and prepaid API usage through CommerceKit.",
       status: "REJECTED",
-      clientId: mara.id,
+      clientId: camille.id,
       taxRateBps: 1498,
       subtotalCents: 408000,
       taxCents: 61118,

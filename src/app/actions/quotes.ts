@@ -161,7 +161,7 @@ function readLeadPayload(payload: unknown) {
   const data = typeof payload === "object" && payload !== null ? payload as Record<string, unknown> : {};
   return {
     name: String(data.name ?? "Client Luma Studio"),
-    email: String(data.email ?? "lead@example.com"),
+    email: String(data.email ?? "camille.demo@kvportfolio.dev"),
     phone: typeof data.phone === "string" ? data.phone : undefined,
     projectType: String(data.projectType ?? "Projet Luma Studio"),
     budgetRange: String(data.budgetRange ?? "Budget a confirmer"),
@@ -333,6 +333,53 @@ export async function updateQuoteStatus(formData: FormData) {
       actionLabel: "Creer le rendez-vous",
       actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}`,
     });
+
+    if (quote.consultantName) {
+      await publishEcosystemEvent({
+        flowId: quote.flowId ?? undefined,
+        sourceApp: "quotepilot",
+        targetApps: ["reserveflow", "clienthub", "api-meter"],
+        eventType: "consultant.selected",
+        entityType: "quote",
+        entityId: quote.id,
+        customerName: quote.client.name,
+        customerEmail: quote.client.email,
+        title: "Consultant selectionne dans QuotePilot",
+        description: `${quote.consultantName} est assigne a ${quote.quoteNumber}.`,
+        payload: {
+          quoteNumber: quote.quoteNumber,
+          consultantName: quote.consultantName,
+          flowId: quote.flowId,
+        },
+        priority: "NORMAL",
+        actionLabel: "Planifier avec ReserveFlow",
+        actionUrl: `${reserveFlowUrl}/booking?flowId=${encodeURIComponent(quote.flowId ?? "")}&quoteId=${quote.id}`,
+      });
+    }
+  }
+
+  if (parsed.data.status === "SENT") {
+    await publishEcosystemEvent({
+      flowId: quote.flowId ?? undefined,
+      sourceApp: "quotepilot",
+      targetApps: ["clienthub", "api-meter"],
+      eventType: "quote.sent",
+      entityType: "quote",
+      entityId: quote.id,
+      customerName: quote.client.name,
+      customerEmail: quote.client.email,
+      title: "Soumission envoyee depuis QuotePilot",
+      description: `${quote.quoteNumber} a ete envoyee a ${quote.client.name}.`,
+      payload: {
+        quoteNumber: quote.quoteNumber,
+        totalCents: quote.totalCents,
+        status: quote.status,
+        flowId: quote.flowId,
+      },
+      priority: "NORMAL",
+      actionLabel: "Voir la soumission",
+      actionUrl: `/dashboard/quotes/${quote.id}`,
+    });
   }
 
   revalidatePath(`/dashboard/quotes/${parsed.data.quoteId}`);
@@ -371,6 +418,28 @@ export async function sendQuoteToClient(formData: FormData) {
   await prisma.quote.update({
     where: { id: quoteId },
     data: { status: "SENT", sentAt: new Date() },
+  });
+
+  await publishEcosystemEvent({
+    flowId: quote.flowId ?? undefined,
+    sourceApp: "quotepilot",
+    targetApps: ["clienthub", "api-meter"],
+    eventType: "quote.sent",
+    entityType: "quote",
+    entityId: quote.id,
+    customerName: quote.client.name,
+    customerEmail: quote.client.email,
+    title: "Soumission envoyee depuis QuotePilot",
+    description: `${quote.quoteNumber} a ete envoyee a ${quote.client.name}.`,
+    payload: {
+      quoteNumber: quote.quoteNumber,
+      totalCents: quote.totalCents,
+      status: "SENT",
+      flowId: quote.flowId,
+    },
+    priority: "NORMAL",
+    actionLabel: "Voir la soumission",
+    actionUrl: `/dashboard/quotes/${quote.id}`,
   });
 
   revalidatePath(`/dashboard/quotes/${quoteId}`);
